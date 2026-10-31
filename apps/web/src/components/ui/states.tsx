@@ -1,0 +1,4 @@
+import { AlertCircle, Inbox } from "lucide-react";
+export function LoadingState({ rows = 3 }: { rows?: number }) { return <div className="space-y-3" aria-label="Carregando">{Array.from({ length: rows }, (_, i) => <div key={i} className="h-12 animate-pulse rounded-lg bg-muted"/>)}</div>; }
+export function ErrorState({ message }: { message: string }) { return <div className="rounded-xl border border-destructive/40 bg-destructive/10 p-4 text-sm text-destructive"><AlertCircle className="mr-2 inline size-4"/>{message}</div>; }
+export function EmptyState({ title, detail }: { title: string; detail: string }) { return <div className="grid min-h-48 place-items-center rounded-xl border border-dashed border-border p-6 text-center"><div><Inbox className="mx-auto mb-3 size-6 text-muted-foreground"/><p className="font-medium">{title}</p><p className="mt-1 max-w-sm text-sm text-muted-foreground">{detail}</p></div></div>; }

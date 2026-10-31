@@ -1,0 +1,11 @@
+"use client";
+import { Search } from "lucide-react";
+import { useState } from "react";
+import { useApi } from "@/lib/client-api";
+import { dateTime } from "@/lib/format";
+import type { Lead } from "@/lib/types";
+import { EmptyState, ErrorState, LoadingState } from "@/components/ui/states";
+import { PageHeader } from "@/components/ui/page-header";
+import { StatusBadge } from "@/components/ui/status-badge";
+export function LeadsPage() { const { data, error, loading } = useApi<{ leads: Lead[] }>("leads"); const [query, setQuery] = useState(""); const items = data?.leads.filter((lead) => `${lead.name} ${lead.phone}`.toLowerCase().includes(query.toLowerCase())) ?? [];
+ return <><PageHeader title="Leads" description="Consulte os contatos recebidos pela Mariana."/><div className="relative mb-5 max-w-md"><Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"/><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Buscar por nome ou telefone" className="h-10 w-full rounded-lg border bg-muted pl-9 pr-3 text-sm outline-none focus:ring-2 focus:ring-primary/40"/></div>{error ? <ErrorState message={error}/> : loading ? <LoadingState rows={6}/> : !items.length ? <EmptyState title="Nenhum lead encontrado" detail="Ajuste a busca ou aguarde novos contatos."/> : <div className="overflow-hidden rounded-xl border bg-card"><div className="overflow-x-auto"><table className="w-full min-w-[680px] text-sm"><thead className="border-b text-left text-xs text-muted-foreground"><tr><th className="px-5 py-3 font-medium">Contato</th><th className="px-5 py-3 font-medium">Telefone</th><th className="px-5 py-3 font-medium">Entrada</th><th className="px-5 py-3 font-medium">Status</th></tr></thead><tbody className="divide-y">{items.map((lead) => <tr key={lead.id}><td className="px-5 py-4"><p className="font-medium">{lead.name}</p>{lead.email && <p className="mt-1 text-xs text-muted-foreground">{lead.email}</p>}</td><td className="px-5 py-4 text-muted-foreground">{lead.phone}</td><td className="px-5 py-4 text-muted-foreground">{dateTime(lead.createdAt)}</td><td className="px-5 py-4"><StatusBadge status={lead.status}/></td></tr>)}</tbody></table></div></div>}</>; }
