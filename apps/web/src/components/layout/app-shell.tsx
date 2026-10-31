@@ -30,8 +30,18 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   return (
     <div className="min-h-screen bg-[#101412] text-foreground lg:grid lg:grid-cols-[244px_1fr]">
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50 focus:rounded-lg focus:bg-primary focus:px-4 focus:py-2 focus:text-xs focus:font-semibold focus:text-primary-foreground focus:shadow-xl"
+      >
+        Pular para o conteúdo principal
+      </a>
+
       {/* Sidebar */}
-      <aside className="border-b border-border bg-[#131814] lg:sticky lg:top-0 lg:h-screen lg:border-r lg:border-b-0 flex flex-col justify-between">
+      <aside
+        aria-label="Navegação do painel"
+        className="border-b border-border bg-[#131814] lg:sticky lg:top-0 lg:h-screen lg:border-r lg:border-b-0 flex flex-col justify-between"
+      >
         <div>
           {/* Logo / Brand */}
           <div className="flex h-16 items-center gap-3 px-6 border-b border-border/50">
@@ -101,7 +111,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           </div>
         </header>
 
-        <main className="mx-auto w-full max-w-7xl flex-1 p-5 sm:p-8">
+        <main id="main-content" className="mx-auto w-full max-w-7xl flex-1 p-5 sm:p-8">
           {children}
         </main>
       </section>

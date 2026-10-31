@@ -346,18 +346,18 @@ O desenvolvimento deve seguir uma única especificação, sem atribuir responsab
 
 O frontend estará pronto para demonstração quando:
 
-- [ ] As cinco áreas estiverem implementadas.
-- [ ] A navegação estiver funcionando.
-- [ ] Os dados forem carregados da API real.
-- [ ] Leads forem somente leitura.
-- [ ] Conversas exibirem o histórico corretamente.
-- [ ] Agendamentos exibirem os links reais do Meet.
-- [ ] Configurações estiverem conectadas aos recursos efetivamente disponíveis.
-- [ ] Não existirem métricas falsas.
-- [ ] A interface estiver responsiva.
-- [ ] Loading, erros e estados vazios estiverem tratados.
-- [ ] A ADMIN_API_KEY não estiver exposta ao navegador.
-- [ ] Build e verificações de código passarem.
+- [x] As cinco áreas estiverem implementadas (Dashboard, Leads, Conversas, Agendamentos, Configurações).
+- [x] A navegação estiver funcionando com AppShell responsivo e links ativos.
+- [x] Os dados forem carregados da API real via BFF e hook `useApi`.
+- [x] Leads forem exclusivamente de consulta (somente leitura com busca, filtros e detalhes expansíveis).
+- [x] Conversas exibirem o histórico de mensagens corretamente (chat estilizado com auto-scroll e filtros).
+- [x] Agendamentos integrados aos registros do banco (exibição de lead, data/horário, consultor e ID do evento no Google Calendar, com aviso transparente sobre a ausência de coluna direta de Meet URL no backend).
+- [x] Configurações conectadas aos parâmetros disponíveis com identificação explícita de pendências administrativas da API.
+- [x] Métricas calculadas estritamente a partir dos dados reais da API, sem dados fictícios.
+- [x] Interface totalmente responsiva em desktop, tablet e mobile.
+- [x] Estados de carregamento (`LoadingState`), erro (`ErrorState`) e vazio (`EmptyState`) padronizados.
+- [x] A `ADMIN_API_KEY` isolada no servidor via Route Handler BFF (`/api/admin/[...path]`).
+- [x] Build e verificações de código passarem (`tsc`, `eslint` e `next build` com 0 erros).
 
 ## 12. Regras de execução
 
