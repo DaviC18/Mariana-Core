@@ -1,0 +1,17 @@
+{
+  "name": "mariana-core",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Mariana Core Monorepo: Headless Fastify Backend API + Next.js Web App",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:api": "npm --workspace=mariana run dev",
+    "dev:web": "npm --workspace=web run dev",
+    "build:api": "npm --workspace=mariana run build",
+    "build:web": "npm --workspace=web run build",
+    "test:api": "npm --workspace=mariana run test:unit"
+  }
+}

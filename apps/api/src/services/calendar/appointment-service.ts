@@ -1,0 +1,425 @@
+/** biome-ignore-all lint/style/noParameterProperties: <> */
+
+import { and, eq, gt, inArray, lt } from "drizzle-orm";
+
+import { db } from "../../db/connections";
+import {
+	appointments,
+	consultants,
+	leads,
+	schedulingSessions,
+} from "../../db/schema";
+import {
+	type CreatedCalendarEvent,
+	GoogleCalendarService,
+} from "../../integrations/google-calendar/google-calendar-service";
+import { AGENDA_OCCUPYING_APPOINTMENT_STATUSES } from "../appointments/appointment-status";
+import { expireSchedulingSessionIfOverdue } from "./scheduling-session-expiration";
+
+export interface CreateAppointmentInput {
+	consultantId: string;
+	endAt: Date;
+	idempotencyKey?: string;
+	leadId: string;
+	now?: Date;
+	schedulingSessionId?: string;
+	startAt: Date;
+}
+
+export interface CreatedAppointment {
+	appointmentId: string;
+	calendarEvent: CreatedCalendarEvent;
+	consultantId: string;
+	endAt: Date;
+	externalEventId: string;
+	startAt: Date;
+	status: "confirmed";
+}
+
+export class AppointmentServiceError extends Error {
+	readonly code:
+		| "consultant_inactive"
+		| "consultant_not_found"
+		| "invalid_time_range"
+		| "lead_not_found"
+		| "lead_not_qualified"
+		| "scheduling_session_invalid"
+		| "scheduling_session_expired"
+		| "slot_unavailable";
+
+	constructor(
+		code:
+			| "consultant_inactive"
+			| "consultant_not_found"
+			| "invalid_time_range"
+			| "lead_not_found"
+			| "lead_not_qualified"
+			| "scheduling_session_invalid"
+			| "scheduling_session_expired"
+			| "slot_unavailable",
+		message: string
+	) {
+		super(message);
+		this.code = code;
+		this.name = "AppointmentServiceError";
+	}
+}
+
+async function validateSchedulingSession(
+	sessionId: string,
+	leadId: string,
+	now: Date
+): Promise<void> {
+	if (!sessionId) {
+		throw new AppointmentServiceError(
+			"scheduling_session_invalid",
+			"A sessão de agendamento não existe ou não pertence a este lead."
+		);
+	}
+
+	const [session] = await db
+		.select({
+			expiresAt: schedulingSessions.expiresAt,
+			leadId: schedulingSessions.leadId,
+			status: schedulingSessions.status,
+		})
+		.from(schedulingSessions)
+		.where(eq(schedulingSessions.id, sessionId))
+		.limit(1);
+
+	if (!session || session.leadId !== leadId) {
+		throw new AppointmentServiceError(
+			"scheduling_session_invalid",
+			"A sessão de agendamento não existe ou não pertence a este lead."
+		);
+	}
+
+	if (session.status === "expired") {
+		throw new AppointmentServiceError(
+			"scheduling_session_expired",
+			"A sessão de agendamento expirou."
+		);
+	}
+
+	if (session.status !== "active") {
+		throw new AppointmentServiceError(
+			"scheduling_session_invalid",
+			"A sessão de agendamento não está mais ativa."
+		);
+	}
+
+	if (session.expiresAt <= now) {
+		await expireSchedulingSessionIfOverdue(db, sessionId, now);
+		throw new AppointmentServiceError(
+			"scheduling_session_expired",
+			"A sessão de agendamento expirou."
+		);
+	}
+}
+
+export class AppointmentService {
+	private readonly googleCalendarService: GoogleCalendarService;
+
+	constructor(googleCalendarService = new GoogleCalendarService()) {
+		this.googleCalendarService = googleCalendarService;
+	}
+
+	async createConfirmedAppointment(
+		input: CreateAppointmentInput
+	): Promise<CreatedAppointment> {
+		const now = input.now ?? new Date();
+
+		// Idempotência de negócio: se a operação lógica já produziu um
+		// agendamento, devolve o existente sem recriar evento no calendário.
+		if (input.idempotencyKey) {
+			const [existingAppointment] = await db
+				.select({
+					consultantId: appointments.consultantId,
+					endAt: appointments.endAt,
+					externalEventId: appointments.externalEventId,
+					id: appointments.id,
+					startAt: appointments.startAt,
+				})
+				.from(appointments)
+				.where(eq(appointments.idempotencyKey, input.idempotencyKey))
+				.limit(1);
+
+			if (existingAppointment) {
+				return {
+					appointmentId: existingAppointment.id,
+					calendarEvent: {
+						end: existingAppointment.endAt.toISOString(),
+						id: existingAppointment.externalEventId,
+						start: existingAppointment.startAt.toISOString(),
+					},
+					consultantId: existingAppointment.consultantId,
+					endAt: existingAppointment.endAt,
+					externalEventId: existingAppointment.externalEventId,
+					startAt: existingAppointment.startAt,
+					status: "confirmed",
+				};
+			}
+		}
+
+		if (input.startAt >= input.endAt) {
+			throw new AppointmentServiceError(
+				"invalid_time_range",
+				"O início do agendamento deve ser anterior ao fim."
+			);
+		}
+
+		const [consultant] = await db
+			.select({
+				active: consultants.active,
+				calendarId: consultants.calendarId,
+				id: consultants.id,
+				name: consultants.name,
+			})
+			.from(consultants)
+			.where(eq(consultants.id, input.consultantId))
+			.limit(1);
+
+		if (!consultant) {
+			throw new AppointmentServiceError(
+				"consultant_not_found",
+				"Consultor não encontrado."
+			);
+		}
+
+		if (!consultant.active) {
+			throw new AppointmentServiceError(
+				"consultant_inactive",
+				"Consultor indisponível para agendamento."
+			);
+		}
+
+		const [lead] = await db
+			.select({
+				consortiumType: leads.consortiumType,
+				id: leads.id,
+				name: leads.name,
+				objective: leads.objective,
+				phone: leads.phone,
+				status: leads.status,
+			})
+			.from(leads)
+			.where(eq(leads.id, input.leadId))
+			.limit(1);
+
+		if (!lead) {
+			throw new AppointmentServiceError(
+				"lead_not_found",
+				"Lead não encontrado."
+			);
+		}
+
+		if (lead.status !== "qualified") {
+			throw new AppointmentServiceError(
+				"lead_not_qualified",
+				"O lead precisa estar qualificado antes do agendamento."
+			);
+		}
+
+		if (input.schedulingSessionId !== undefined) {
+			await validateSchedulingSession(
+				input.schedulingSessionId,
+				input.leadId,
+				now
+			);
+		}
+
+		const [conflictingAppointment] = await db
+			.select({ id: appointments.id })
+			.from(appointments)
+			.where(
+				and(
+					eq(appointments.consultantId, input.consultantId),
+					inArray(appointments.status, AGENDA_OCCUPYING_APPOINTMENT_STATUSES),
+					lt(appointments.startAt, input.endAt),
+					gt(appointments.endAt, input.startAt)
+				)
+			)
+			.limit(1);
+
+		if (conflictingAppointment) {
+			throw new AppointmentServiceError(
+				"slot_unavailable",
+				"O consultor já possui um agendamento nesse horário."
+			);
+		}
+
+		const [calendarAvailability] =
+			await this.googleCalendarService.getBusyPeriods(
+				[consultant.calendarId],
+				input.startAt,
+				input.endAt,
+				input.consultantId
+			);
+
+		if ((calendarAvailability?.busy.length ?? 0) > 0) {
+			throw new AppointmentServiceError(
+				"slot_unavailable",
+				"O horário escolhido não está mais disponível no Google Calendar."
+			);
+		}
+
+		const finalizationNow = input.now ?? new Date();
+		if (input.schedulingSessionId !== undefined) {
+			await validateSchedulingSession(
+				input.schedulingSessionId,
+				input.leadId,
+				finalizationNow
+			);
+		}
+
+		// The final conditional close detects lifecycle races; the catch compensates if it loses.
+		const calendarEvent = await this.googleCalendarService.createEvent({
+			calendarId: consultant.calendarId,
+			consultantId: input.consultantId,
+			description: buildEventDescription(lead),
+			end: input.endAt,
+			requestId: input.idempotencyKey,
+			start: input.startAt,
+			summary: `Atendimento - ${consultant.name}`,
+		});
+
+		try {
+			const appointment = await db.transaction(async (tx) => {
+				// F-V1b-3: o lead primeiro, como a rotação (session-rotation.ts).
+				// Sem isso, sessão → lead aqui contra lead → sessão lá dá 40P01.
+				await tx
+					.select({ id: leads.id })
+					.from(leads)
+					.where(eq(leads.id, input.leadId))
+					.for("update");
+
+				/*
+				 * Quando o agendamento veio de uma scheduling session,
+				 * a sessão precisa continuar válida até o momento
+				 * da persistência final.
+				 *
+				 * O fechamento ocorre dentro da mesma transação
+				 * do appointment e da atualização do lead.
+				 */
+				if (input.schedulingSessionId !== undefined) {
+					const [closedSession] = await tx
+						.update(schedulingSessions)
+						.set({
+							status: "closed",
+							updatedAt: finalizationNow,
+						})
+						.where(
+							and(
+								eq(schedulingSessions.id, input.schedulingSessionId),
+								eq(schedulingSessions.leadId, input.leadId),
+								eq(schedulingSessions.status, "active"),
+								gt(schedulingSessions.expiresAt, finalizationNow)
+							)
+						)
+						.returning({
+							id: schedulingSessions.id,
+						});
+
+					if (!closedSession) {
+						throw new Error("A sessão de agendamento não está mais ativa.");
+					}
+				}
+
+				const [createdAppointment] = await tx
+					.insert(appointments)
+					.values({
+						consultantId: input.consultantId,
+						endAt: input.endAt,
+						externalEventId: calendarEvent.id,
+						idempotencyKey: input.idempotencyKey ?? null,
+						leadId: input.leadId,
+						startAt: input.startAt,
+						status: "confirmed",
+					})
+					.returning({
+						consultantId: appointments.consultantId,
+						endAt: appointments.endAt,
+						externalEventId: appointments.externalEventId,
+						id: appointments.id,
+						startAt: appointments.startAt,
+						status: appointments.status,
+					});
+
+				if (!createdAppointment) {
+					throw new Error("Não foi possível salvar o agendamento.");
+				}
+
+				const [scheduledLead] = await tx
+					.update(leads)
+					.set({
+						status: "scheduled",
+						updatedAt: now,
+					})
+					.where(and(eq(leads.id, input.leadId), eq(leads.status, "qualified")))
+					.returning({
+						id: leads.id,
+					});
+
+				if (!scheduledLead) {
+					throw new AppointmentServiceError(
+						"lead_not_qualified",
+						"O lead não está mais qualificado para agendamento."
+					);
+				}
+
+				return createdAppointment;
+			});
+
+			return {
+				appointmentId: appointment.id,
+				calendarEvent,
+				consultantId: appointment.consultantId,
+				endAt: appointment.endAt,
+				externalEventId: appointment.externalEventId,
+				startAt: appointment.startAt,
+				status: "confirmed",
+			};
+		} catch (error) {
+			try {
+				await this.googleCalendarService.deleteEvent(
+					consultant.calendarId,
+					calendarEvent.id,
+					input.consultantId
+				);
+			} catch {
+				// The original persistence error remains the actionable error.
+			}
+
+			throw error;
+		}
+	}
+}
+
+/**
+ * Descrição do evento para o consultor. Só dados que ele já pode ver; o
+ * telefone vira link do WhatsApp e o uuid do lead nunca aparece (C-MEET).
+ */
+function buildEventDescription(lead: {
+	consortiumType: string | null;
+	name: string;
+	objective: string | null;
+	phone: string;
+}): string {
+	const lines = ["Agendamento da Mariana.", `Cliente: ${lead.name}`];
+	const phone = lead.phone.replace(/\D/g, "");
+	const whatsapp = phone.startsWith("55") ? phone : `55${phone}`;
+
+	if (whatsapp.length > 2) {
+		lines.push(`WhatsApp: https://wa.me/${whatsapp}`);
+	}
+
+	if (lead.objective?.trim()) {
+		lines.push(`Objetivo: ${lead.objective.trim()}`);
+	}
+
+	if (lead.consortiumType?.trim()) {
+		lines.push(`Consórcio: ${lead.consortiumType.trim()}`);
+	}
+
+	return lines.join("\n");
+}
