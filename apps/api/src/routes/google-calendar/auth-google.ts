@@ -239,6 +239,11 @@ export const authGoogle: FastifyPluginCallback<AuthGoogleOptions> = (
 					target: googleCalendarConnections.consultantId,
 				});
 
+			if (request.headers.accept?.includes("text/html")) {
+				const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
+				return reply.redirect(`${frontendUrl}/configuracoes?tab=consultores`);
+			}
+
 			return reply.send({
 				consultant: consultant.name,
 				hasAccessToken: Boolean(tokens.access_token),

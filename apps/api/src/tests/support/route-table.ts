@@ -33,6 +33,7 @@ export const ADMIN_ROUTES = [
 	"GET /consultants",
 	"POST /consultants",
 	"PATCH /consultants/:id",
+	"DELETE /consultants/:id",
 ].sort();
 
 export const EXPECTED_ROUTES = [...PUBLIC_ROUTES, ...ADMIN_ROUTES].sort();
@@ -43,7 +44,7 @@ const SAMPLE_ID = "00000000-0000-4000-8000-000000000000";
 export function toRequest(route: string) {
 	const [method, pattern] = route.split(" ") as [string, string];
 	return {
-		method: method as "GET" | "POST" | "PATCH",
+		method: method as "DELETE" | "GET" | "POST" | "PATCH",
 		url: pattern.replace(/:[A-Za-z]+/g, SAMPLE_ID),
 	};
 }

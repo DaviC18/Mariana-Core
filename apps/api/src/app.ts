@@ -16,6 +16,7 @@ import { createRequireAdmin } from "./lib/security/admin-auth";
 import { AuthFailureLimiter } from "./lib/security/auth-failure-limiter";
 import { adminTotpAuth } from "./routes/admin/auth-totp";
 import { adminConsultants } from "./routes/admin/consultants";
+import { systemSettingsRoutes } from "./routes/admin/system-settings";
 import { createAppointments } from "./routes/appointments/create-appointments";
 import { getAppointments } from "./routes/appointments/get-appointments";
 import { getAppointmentAvailability } from "./routes/appointments/get-availability";
@@ -137,6 +138,7 @@ export function buildApp(options: BuildAppOptions = {}) {
 		admin.register(getAppointments);
 		admin.register(googleCalendarConnectLink);
 		admin.register(adminConsultants);
+		admin.register(systemSettingsRoutes);
 		options.registerAdminRoutes?.(admin);
 	});
 

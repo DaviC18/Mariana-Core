@@ -30,6 +30,7 @@ export {
 	schedulingSessions,
 } from "./scheduling-sessions";
 export { schedulingSlots } from "./scheduling-slots";
+export { systemSettings } from "./system-settings";
 export {
 	whatsappWebhookEventStatus,
 	whatsappWebhookEvents,

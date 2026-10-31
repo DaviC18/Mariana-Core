@@ -18,6 +18,9 @@ const statusConfig: Record<string, { label: string; tone: string; dot: string }>
   expired: { label: "Expirado", tone: "bg-destructive/10 text-destructive border-destructive/20", dot: "bg-destructive" },
   cancelled: { label: "Cancelado", tone: "bg-destructive/10 text-destructive border-destructive/20", dot: "bg-destructive" },
   completed: { label: "Concluído", tone: "bg-primary/10 text-primary border-primary/20", dot: "bg-primary" },
+  // Google Calendar
+  connected: { label: "Conectado", tone: "bg-primary/10 text-primary border-primary/20", dot: "bg-primary" },
+  disconnected: { label: "Desconectado", tone: "bg-muted text-muted-foreground border-border", dot: "bg-muted-foreground" },
 };
 
 export function StatusBadge({ status, className = "" }: StatusBadgeProps) {
