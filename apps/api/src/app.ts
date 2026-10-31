@@ -14,6 +14,8 @@ import { env } from "./env";
 import { loggerConfig, redactSensitiveQuery } from "./lib/logger";
 import { createRequireAdmin } from "./lib/security/admin-auth";
 import { AuthFailureLimiter } from "./lib/security/auth-failure-limiter";
+import { adminTotpAuth } from "./routes/admin/auth-totp";
+import { adminConsultants } from "./routes/admin/consultants";
 import { createAppointments } from "./routes/appointments/create-appointments";
 import { getAppointments } from "./routes/appointments/get-appointments";
 import { getAppointmentAvailability } from "./routes/appointments/get-availability";
@@ -105,11 +107,13 @@ export function buildApp(options: BuildAppOptions = {}) {
 	app.register(metaAdsWebhookRoutes);
 	app.register(authGoogle, { limiter });
 	app.get("/", async () => "ok");
+	app.register(adminTotpAuth(limiter));
 
 	// Escopo de admin: toda rota registrada aqui exige
 	// `Authorization: Bearer <ADMIN_API_KEY>`. Rota nova entra aqui por padrão.
 	const requireAdmin = createRequireAdmin({
 		adminApiKey: options.adminApiKey ?? env.ADMIN_API_KEY,
+		adminSessionSecret: env.APP_SIGNING_SECRET,
 		limiter,
 	});
 	app.register(async (admin) => {
@@ -132,6 +136,7 @@ export function buildApp(options: BuildAppOptions = {}) {
 		admin.register(getIdAppointments);
 		admin.register(getAppointments);
 		admin.register(googleCalendarConnectLink);
+		admin.register(adminConsultants);
 		options.registerAdminRoutes?.(admin);
 	});
 

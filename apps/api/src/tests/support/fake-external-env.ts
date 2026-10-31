@@ -5,6 +5,7 @@
  */
 export const FAKE_EXTERNAL_ENV = {
 	ADMIN_API_KEY: "test-admin-api-key-0123456789abcdef",
+	ADMIN_TOTP_SECRET: "JBSWY3DPEHPK3PXP",
 	APP_SIGNING_SECRET: "test-app-signing-secret-0123456789ab",
 	GEMINI_API_KEY: "test-gemini-api-key",
 	GOOGLE_ACCOUNT_EMAIL: "test-account@example.test",

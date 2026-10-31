@@ -25,6 +25,8 @@ export const envSchema = z.object({
 		.string()
 		.min(32)
 		.regex(NO_WHITESPACE, { message: "must not contain whitespace" }),
+	// Segredo base32 do autenticador do administrador; nunca é exposto ao painel.
+	ADMIN_TOTP_SECRET: z.string().min(16).regex(NO_WHITESPACE, { message: "must not contain whitespace" }),
 	// Chave de assinatura de tickets/state do OAuth. Precisa ser diferente da
 	// ADMIN_API_KEY (ver `refinedEnvSchema`).
 	APP_SIGNING_SECRET: z
@@ -180,6 +182,7 @@ export type Env = z.infer<typeof envSchema>;
 export function buildEnvInput(source: NodeJS.ProcessEnv) {
 	return {
 		ADMIN_API_KEY: source.ADMIN_API_KEY,
+		ADMIN_TOTP_SECRET: source.ADMIN_TOTP_SECRET,
 		APP_SIGNING_SECRET: source.APP_SIGNING_SECRET,
 		AUTONOMOUS_TASK_POLL_MS: parseIntegerEnv(
 			source.AUTONOMOUS_TASK_POLL_MS,

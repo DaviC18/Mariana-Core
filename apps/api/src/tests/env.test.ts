@@ -14,6 +14,7 @@ const GEMINI_TEMPERATURE_ERROR = /GEMINI_TEMPERATURE/;
 const GEMINI_THINKING_LEVEL_ERROR = /GEMINI_THINKING_LEVEL/;
 const GEMINI_MAX_OUTPUT_TOKENS_ERROR = /GEMINI_MAX_OUTPUT_TOKENS/;
 const ADMIN_API_KEY_ERROR = /ADMIN_API_KEY/;
+const ADMIN_TOTP_SECRET_ERROR = /ADMIN_TOTP_SECRET/;
 const APP_SIGNING_SECRET_ERROR = /APP_SIGNING_SECRET/;
 const TRUST_PROXY_HOPS_ERROR = /TRUST_PROXY_HOPS/;
 const MARIANA_FLOW_ERROR = /MARIANA_FLOW/;
@@ -25,6 +26,7 @@ const VALID_SIGNING_SECRET = "app-signing-secret-0123456789abcdef";
 
 const VALID_SOURCE = {
 	ADMIN_API_KEY: VALID_ADMIN_API_KEY,
+	ADMIN_TOTP_SECRET: "JBSWY3DPEHPK3PXP",
 	APP_SIGNING_SECRET: VALID_SIGNING_SECRET,
 	DATABASE_URL: "postgresql://user:password@localhost:5432/mariana",
 	GEMINI_API_KEY: "gemini-api-key",
@@ -62,6 +64,13 @@ test("parseEnv lança erro acionável quando uma variável obrigatória está au
 	assert.throws(
 		() => parseEnv({ ...VALID_SOURCE, GEMINI_API_KEY: undefined }),
 		MISSING_GEMINI_ERROR
+	);
+});
+
+test("parseEnv recusa ADMIN_TOTP_SECRET ausente", () => {
+	assert.throws(
+		() => parseEnv({ ...VALID_SOURCE, ADMIN_TOTP_SECRET: undefined }),
+		ADMIN_TOTP_SECRET_ERROR
 	);
 });
 

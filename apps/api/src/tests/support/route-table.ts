@@ -12,6 +12,7 @@ export const PUBLIC_ROUTES = [
 	"POST /webhooks/google-ads",
 	"GET /auth/google",
 	"GET /auth/google/callback",
+	"POST /admin/auth/totp",
 ].sort();
 
 export const ADMIN_ROUTES = [
@@ -29,6 +30,9 @@ export const ADMIN_ROUTES = [
 	"GET /appointments/availability",
 	"POST /appointments",
 	"POST /admin/google-calendar/connect-link",
+	"GET /consultants",
+	"POST /consultants",
+	"PATCH /consultants/:id",
 ].sort();
 
 export const EXPECTED_ROUTES = [...PUBLIC_ROUTES, ...ADMIN_ROUTES].sort();
@@ -39,7 +43,7 @@ const SAMPLE_ID = "00000000-0000-4000-8000-000000000000";
 export function toRequest(route: string) {
 	const [method, pattern] = route.split(" ") as [string, string];
 	return {
-		method: method as "GET" | "POST",
+		method: method as "GET" | "POST" | "PATCH",
 		url: pattern.replace(/:[A-Za-z]+/g, SAMPLE_ID),
 	};
 }

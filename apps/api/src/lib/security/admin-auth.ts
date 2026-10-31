@@ -1,5 +1,5 @@
 import type { FastifyReply, FastifyRequest } from "fastify";
-
+import { verifyAdminSession } from "./admin-totp";
 import type { AuthFailureLimiter } from "./auth-failure-limiter";
 import { safeEqual } from "./constant-time";
 
@@ -9,7 +9,7 @@ import { safeEqual } from "./constant-time";
  */
 export interface RequestPrincipal {
 	role: "admin";
-	via: "api_key";
+	via: "api_key" | "totp_session";
 }
 
 declare module "fastify" {
@@ -49,6 +49,7 @@ function failureReason(
 
 export interface RequireAdminOptions {
 	adminApiKey: string;
+	adminSessionSecret: string;
 	limiter: AuthFailureLimiter;
 }
 
@@ -59,6 +60,7 @@ export interface RequireAdminOptions {
  */
 export function createRequireAdmin({
 	adminApiKey,
+	adminSessionSecret,
 	limiter,
 }: RequireAdminOptions) {
 	// biome-ignore lint/suspicious/useAwait: async Fastify hook; it returns the reply instead of calling done.
@@ -81,11 +83,21 @@ export function createRequireAdmin({
 				.send({ error: "too_many_requests" });
 		}
 
-		const reason = failureReason(request.headers.authorization, adminApiKey);
+		const sessionHeader = request.headers["x-admin-session"];
+		const hasSession = verifyAdminSession(
+			adminSessionSecret,
+			typeof sessionHeader === "string" ? sessionHeader : undefined
+		);
+		const reason = hasSession
+			? undefined
+			: failureReason(request.headers.authorization, adminApiKey);
 
 		if (reason === undefined) {
 			limiter.reset(ip);
-			request.principal = { role: "admin", via: "api_key" };
+			request.principal = {
+				role: "admin",
+				via: hasSession ? "totp_session" : "api_key",
+			};
 			return;
 		}
 
