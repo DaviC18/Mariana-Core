@@ -44,12 +44,12 @@ test("greeting never uses the phone as name", () => {
 	});
 	assert.equal(
 		anonymous,
-		"Oi! Eu sou a Mariana, atendente virtual da Ademicon. Me conta: o que você procura no consórcio?"
+		"Oi! Eu sou a Mariana, atendente virtual da Ademicon. Como posso ajudar você hoje?"
 	);
 	assert.ok(!anonymous.includes("98765"));
 	assert.equal(
 		buildWelcomeText({ conversationId: CONVERSATION_A, name: "Ana", phone }),
-		"Oi, Ana! Eu sou a Mariana, atendente virtual da Ademicon. Me conta: o que você procura no consórcio?"
+		"Oi, Ana! Eu sou a Mariana, atendente virtual da Ademicon. Como posso ajudar você hoje?"
 	);
 });
 

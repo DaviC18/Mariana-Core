@@ -18,6 +18,9 @@ import {
 	STATUS_PHRASES,
 } from "./intent-lists";
 
+const NAME_INTRODUCTION =
+	/^\s*(?:meu nome é|me chamo|sou o|sou a)\s+[\p{L}'-]+\s*[!.]?\s*$/iu;
+
 /**
  * Oferta pendente sem migração (Q7): vem da última linha da assistente da
  * conversa atual, quando ela é exatamente um texto fixo do backend.
@@ -107,6 +110,19 @@ export function isGreetingOnly(text: string): boolean {
 	return true;
 }
 
+/** Apresentação curta enviada logo após uma saudação no mesmo lote do WhatsApp. */
+function isNameIntroduction(text: string): boolean {
+	return NAME_INTRODUCTION.test(text);
+}
+
+function isFirstContactGreeting(messages: string[]): boolean {
+	return (
+		messages.length > 0 &&
+		isGreetingOnly(messages[0] ?? "") &&
+		messages.slice(1).every(isNameIntroduction)
+	);
+}
+
 /** "Sim" curto: `isClearAffirmative` ou a lista extra da v2 (N1). */
 export function isClearYes(text: string): boolean {
 	return (
@@ -181,7 +197,10 @@ export function routeTurn(
 		}
 	}
 
-	if (messages.every(isGreetingOnly)) {
+	if (
+		messages.every(isGreetingOnly) ||
+		(!state.hasAssistantReply && isFirstContactGreeting(messages))
+	) {
 		return { route: state.hasAssistantReply ? "R5" : "R4" };
 	}
 

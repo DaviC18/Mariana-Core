@@ -160,6 +160,7 @@ test("valid JSON → intent, fields and reply; statedCreditValue is dropped", as
 	assert.deepEqual(result, {
 		fields: { objective: "carro" },
 		intent: "provides_info",
+		offerConsultant: false,
 		reply: "Legal!",
 	});
 	assert.equal(model.calls.length, 1);

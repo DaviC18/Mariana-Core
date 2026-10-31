@@ -157,11 +157,17 @@ function containsFixedOffer(normalized: string, raw: string): boolean {
  */
 const CONTEMPLATED = /\bcontemplad[oa]s?\b/;
 const TIME_OR_SPEED =
-	/\b(?:rapid\w*|logo|breve|cedo|imediat\w*|prazo|em ate|dentro de|anos?|mes|meses|semanas?|dias?|primeir[oa]s?)\b/;
+	/\b(?:rapid\w*|logo|breve|cedo|imediat\w*|prazo|em ate|dentro de|primeir[oa]s?)\b/;
+const TIMED_CONTEMPLATION_BEFORE = new RegExp(
+	`\b(?:em|ate|dentro de)\s+(?:\d+|${NUMBER_WORD}|${FEW_WORD})\s+(?:dias?|semanas?|mes|meses|anos?)\b[^.!?]*\bcontemplad[oa]s?\b`
+);
+const SHORT_ACKNOWLEDGEMENT = /^(?:claro|entendi|perfeito|otimo|ótimo|certo|sim)$/i;
 
 function promisesTimedContemplation(normalized: string): boolean {
 	return (normalized.match(SENTENCE_CHUNKS) ?? []).some(
-		(sentence) => CONTEMPLATED.test(sentence) && TIME_OR_SPEED.test(sentence)
+		(sentence) =>
+			CONTEMPLATED.test(sentence) &&
+			(TIME_OR_SPEED.test(sentence) || TIMED_CONTEMPLATION_BEFORE.test(sentence))
 	);
 }
 
@@ -209,7 +215,11 @@ export function checkReply(reply: string): ReplyGuardResult {
 
 	const sentences = reply
 		.split(SENTENCE_SPLIT)
-		.filter((sentence) => sentence.trim().length > 0);
+		.map((sentence) => sentence.trim())
+		.filter(
+			(sentence) =>
+				sentence.length > 0 && !SHORT_ACKNOWLEDGEMENT.test(sentence)
+		);
 	if (sentences.length > MAX_SENTENCES) {
 		return { ok: false, reason: "too_many_sentences" };
 	}

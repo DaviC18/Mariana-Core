@@ -338,8 +338,8 @@ test("MARIANA_HISTORY_MESSAGES defaults to 10 and accepts only integers 1-30", (
 	}
 });
 
-test("MARIANA_UNDERSTAND_TIMEOUT_MS defaults to 20000 and accepts only 1000-45000", () => {
-	assert.equal(parseEnv(VALID_SOURCE).MARIANA_UNDERSTAND_TIMEOUT_MS, 20_000);
+test("MARIANA_UNDERSTAND_TIMEOUT_MS defaults to 45000 and accepts only 1000-45000", () => {
+	assert.equal(parseEnv(VALID_SOURCE).MARIANA_UNDERSTAND_TIMEOUT_MS, 45_000);
 	assert.equal(
 		parseEnv({ ...VALID_SOURCE, MARIANA_UNDERSTAND_TIMEOUT_MS: "5000" })
 			.MARIANA_UNDERSTAND_TIMEOUT_MS,

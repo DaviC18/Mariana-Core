@@ -26,7 +26,10 @@ export const envSchema = z.object({
 		.min(32)
 		.regex(NO_WHITESPACE, { message: "must not contain whitespace" }),
 	// Segredo base32 do autenticador do administrador; nunca é exposto ao painel.
-	ADMIN_TOTP_SECRET: z.string().min(16).regex(NO_WHITESPACE, { message: "must not contain whitespace" }),
+	ADMIN_TOTP_SECRET: z
+		.string()
+		.min(16)
+		.regex(NO_WHITESPACE, { message: "must not contain whitespace" }),
 	// Chave de assinatura de tickets/state do OAuth. Precisa ser diferente da
 	// ADMIN_API_KEY (ver `refinedEnvSchema`).
 	APP_SIGNING_SECRET: z
@@ -84,7 +87,7 @@ export const envSchema = z.object({
 		.int()
 		.min(1000)
 		.max(45_000)
-		.default(20_000),
+		.default(45_000),
 	MESSAGE_DEBOUNCE_MS: z.coerce.number().int().positive().default(15_000),
 	META_ADS_APP_SECRET: z.string().min(1),
 	META_ADS_GRAPH_API_VERSION: z.string().min(1),

@@ -53,6 +53,11 @@ test("R4: greeting only, no assistant reply yet → T-WELCOME", () => {
 	assert.equal(route({}, ["oi", "bom dia"]), "R4");
 });
 
+test("R4: saudação seguida de apresentação no lote do debounce → T-WELCOME", () => {
+	assert.equal(route({}, ["ola boa tarde", "meu nome é davi"]), "R4");
+	assert.equal(route({}, ["oi", "me chamo Ana"]), "R4");
+});
+
 test("R5: greeting only after an assistant reply → T-GREETING-AGAIN", () => {
 	assert.equal(route({ hasAssistantReply: true }, ["oi"]), "R5");
 	assert.equal(

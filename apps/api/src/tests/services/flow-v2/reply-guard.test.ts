@@ -95,6 +95,9 @@ test("slot or scheduling claim → reject", () => {
 test("more than 3 sentences → reject", () => {
 	rejects("Um. Dois. Três. Quatro.", "too_many_sentences");
 	passes("O consórcio é um grupo. Cada um contribui por mês. Há assembleias.");
+	passes(
+		"Claro! No consórcio, você contribui com o grupo. As assembleias podem contemplar por sorteio ou lance. Qual bem você pretende adquirir?"
+	);
 });
 
 test("more than 1 question → reject", () => {
@@ -247,6 +250,9 @@ test("B-2: guaranteed or timed contemplation → reject; neutral facts pass", ()
 	rejects("Em até três anos você é contemplado.", "contemplation_promise");
 	rejects("Você é contemplada logo no começo.", "contemplation_promise");
 	passes("A contemplação acontece por sorteio ou por lance.");
+	passes(
+		"A cada mês, ocorrem assembleias em que participantes podem ser contemplados por sorteio ou lance."
+	);
 	passes("As administradoras não vendem cotas já contempladas.");
 });
 

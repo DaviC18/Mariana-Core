@@ -33,7 +33,7 @@ export const NO_SLOTS_TEXT =
 /** Spec §4: até 3 variações; hoje só uma foi aprovada para cada. */
 const WELCOME_VARIANTS = [
 	(greeting: string) =>
-		`${greeting}! Eu sou a Mariana, atendente virtual da Ademicon. Me conta: o que você procura no consórcio?`,
+		`${greeting}! Eu sou a Mariana, atendente virtual da Ademicon. Como posso ajudar você hoje?`,
 ] as const;
 const DECLINE_VARIANTS = [
 	"Tudo bem! Se surgir qualquer dúvida, é só me chamar por aqui.",

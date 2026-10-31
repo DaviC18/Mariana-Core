@@ -753,15 +753,16 @@ async function planUnderstood(
 		return reschedulePlan(state);
 	}
 	if (route === "R7c" && reply) {
-		// R7e: a resposta da IA vai com os botões da etapa atual.
-		return await withStageOrConsultant({
-			body: reply,
-			buttonRoute: "R7c",
-			conversationId,
-			responder: "ai",
-			stageRoute: "R7e",
-			state,
-		});
+		const stage = state.activeSession
+			? await buildCurrentStagePayload(db, conversationId)
+			: null;
+		if (stage) {
+			return withStageButtons("R7e", reply, "ai", stage);
+		}
+		if (state.futureAppointment || !understood.offerConsultant) {
+			return text("R7c", reply, "ai");
+		}
+		return withConsultantButton("R7c", reply, "ai");
 	}
 	return await withStageOrConsultant({
 		body: T_AI_FALLBACK,
