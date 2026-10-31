@@ -1,15 +1,52 @@
 "use client";
+
 import { useEffect, useState } from "react";
 
+type ApiState<T> = {
+  data?: T;
+  error?: string;
+  loading: boolean;
+};
+
 export function useApi<T>(path: string) {
-  const [data, setData] = useState<T>(); const [error, setError] = useState<string>(); const [loading, setLoading] = useState(true);
+  const [state, setState] = useState<ApiState<T>>({
+    loading: true,
+  });
+
   useEffect(() => {
+    let active = true;
     const controller = new AbortController();
-    fetch(`/api/admin/${path}`, { signal: controller.signal, cache: "no-store" })
-      .then(async (response) => { if (!response.ok) throw new Error((await response.json().catch(() => null))?.error ?? "Não foi possível carregar estes dados."); return response.json() as Promise<T>; })
-      .then(setData).catch((reason: unknown) => { if ((reason as Error).name !== "AbortError") setError(reason instanceof Error ? reason.message : "Erro inesperado."); })
-      .finally(() => { if (!controller.signal.aborted) setLoading(false); });
-    return () => controller.abort();
+
+    fetch(`/api/admin/${path}`, {
+      signal: controller.signal,
+      cache: "no-store",
+    })
+      .then(async (response) => {
+        if (!response.ok) {
+          const body = await response.json().catch(() => null);
+          throw new Error(body?.error ?? `Erro HTTP ${response.status}`);
+        }
+        return response.json() as Promise<T>;
+      })
+      .then((data) => {
+        if (active) {
+          setState({ data, loading: false });
+        }
+      })
+      .catch((err: unknown) => {
+        if (active && (err as Error).name !== "AbortError") {
+          setState({
+            error: err instanceof Error ? err.message : "Erro inesperado ao consultar a API.",
+            loading: false,
+          });
+        }
+      });
+
+    return () => {
+      active = false;
+      controller.abort();
+    };
   }, [path]);
-  return { data, error, loading };
+
+  return state;
 }
