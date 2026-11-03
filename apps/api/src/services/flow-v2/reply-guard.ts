@@ -31,9 +31,11 @@ const SENTENCE_SPLIT = /[.!?]+(?:\s+|$)|\n+/;
 const SENTENCE_CHUNKS = /[^.!?\n]+/g;
 const ANY_DIGIT = /\d/;
 /** Únicos números aprovados (R-INF-06 e a base): o resto é rejeitado (B-1). */
-const APPROVED_NUMBER_FACTS = /\b(?:18 anos|35 anos|30 minutos)\b/g;
+const APPROVED_NUMBER_FACTS = /\b(?:18 anos|35 anos|30 minutos|0\s*km)\b/g;
 const MONEY_EMOJI = /[\u{1F4B0}\u{1F4B5}\u{1F4B8}\u{1F911}\u{1F4B2}]/u;
 const QUESTION_MARKS = /\?+/g;
+const COURTESY_QUESTIONS =
+	/\b(?:tudo bem|tudo bom|como vai(?:\s+voce|\s+você)?|como voce esta|como você está|como esta|como está)\s*\?/gi;
 
 const NUMBER_WORD =
 	"(?:um|uma|dois|duas|tres|quatro|cinco|seis|sete|oito|nove|dez|onze|doze|quinze|vinte|trinta|quarenta|cinquenta|sessenta|setenta|oitenta|noventa|cem|cento|duzentos|trezentos)";
@@ -161,7 +163,8 @@ const TIME_OR_SPEED =
 const TIMED_CONTEMPLATION_BEFORE = new RegExp(
 	`\b(?:em|ate|dentro de)\s+(?:\d+|${NUMBER_WORD}|${FEW_WORD})\s+(?:dias?|semanas?|mes|meses|anos?)\b[^.!?]*\bcontemplad[oa]s?\b`
 );
-const SHORT_ACKNOWLEDGEMENT = /^(?:claro|entendi|perfeito|otimo|ótimo|certo|sim)$/i;
+const SHORT_ACKNOWLEDGEMENT =
+	/^(?:claro|entendi|perfeito|otimo|ótimo|certo|sim|ola|olá|oi|ola [^.!?]+|olá [^.!?]+|oi [^.!?]+|tudo bem\??|tudo bom\??|como vai\??)$/i;
 
 function promisesTimedContemplation(normalized: string): boolean {
 	return (normalized.match(SENTENCE_CHUNKS) ?? []).some(
@@ -224,7 +227,8 @@ export function checkReply(reply: string): ReplyGuardResult {
 		return { ok: false, reason: "too_many_sentences" };
 	}
 
-	if ((reply.match(QUESTION_MARKS) ?? []).length > MAX_QUESTIONS) {
+	const questionCandidate = reply.replace(COURTESY_QUESTIONS, "");
+	if ((questionCandidate.match(QUESTION_MARKS) ?? []).length > MAX_QUESTIONS) {
 		return { ok: false, reason: "too_many_questions" };
 	}
 

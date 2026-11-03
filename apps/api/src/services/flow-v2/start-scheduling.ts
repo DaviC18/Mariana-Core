@@ -28,7 +28,7 @@ export type FlowV2Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
 export type SchedulingOfferPreparation =
 	| { kind: "slots"; slots: ConsultantAvailableSlot[] }
-	| { kind: "none" }
+	| { kind: "none"; noSlotsText?: string }
 	| { kind: "calendar_unavailable" };
 
 const MAX_OFFERED_SLOTS = 3;
@@ -115,22 +115,28 @@ export async function prepareSchedulingOffer({
 	leadId,
 	now = new Date(),
 	random,
+	timeRange,
 }: {
 	availability: SchedulingAvailabilityService;
 	conversationId: string;
 	leadId: string;
 	now?: Date;
 	random: () => number;
+	/** Pedido explícito do lead (um dia). Sem ele, a janela padrão. */
+	timeRange?: { timeMax: Date; timeMin: Date };
 }): Promise<SchedulingOfferPreparation> {
-	const timeMax = new Date(now);
-	timeMax.setDate(timeMax.getDate() + OFFER_WINDOW_DAYS);
+	const timeMin = timeRange?.timeMin ?? now;
+	const timeMax = timeRange?.timeMax ?? new Date(now);
+	if (!timeRange) {
+		timeMax.setDate(timeMax.getDate() + OFFER_WINDOW_DAYS);
+	}
 
 	try {
 		const slots = await availability.getAvailableSlots({
 			leadId,
 			random,
 			timeMax,
-			timeMin: now,
+			timeMin,
 		});
 		const offered = slots.slice(0, MAX_OFFERED_SLOTS);
 		return offered.length > 0
@@ -167,11 +173,13 @@ export async function writeSchedulingReply(
 	{
 		conversationId,
 		leadId,
+		noSlotsText,
 		now = new Date(),
 		offer,
 	}: {
 		conversationId: string;
 		leadId: string;
+		noSlotsText?: string;
 		now?: Date;
 		offer: SchedulingOfferPreparation;
 	}
@@ -182,7 +190,9 @@ export async function writeSchedulingReply(
 }> {
 	if (offer.kind !== "slots") {
 		const text =
-			offer.kind === "none" ? NO_SLOTS_TEXT : CALENDAR_UNAVAILABLE_TEXT;
+			offer.kind === "none"
+				? (noSlotsText ?? offer.noSlotsText ?? NO_SLOTS_TEXT)
+				: CALENDAR_UNAVAILABLE_TEXT;
 		const assistantMessageId = await insertAssistantRow(
 			tx,
 			conversationId,

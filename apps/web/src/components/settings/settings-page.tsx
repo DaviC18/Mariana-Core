@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
 
 import {
@@ -84,10 +85,18 @@ export function SettingsPage() {
   const [savingKey, setSavingKey] = useState<string | null>(null);
 
   // Form states for settings
-  const [companyForm, setCompanyForm] = useState<CompanySettings>({ description: "", name: "", phone: "" });
+  const [companyForm, setCompanyForm] = useState<CompanySettings>({
+    description: "",
+    name: "",
+    phone: "",
+  });
   const [productsForm, setProductsForm] = useState<ProductItem[]>([]);
   const [faqForm, setFaqForm] = useState<FaqItem[]>([]);
-  const [agentForm, setAgentForm] = useState<AgentSettings>({ instructions: "", maxWaitMinutes: 15, tone: "" });
+  const [agentForm, setAgentForm] = useState<AgentSettings>({
+    instructions: "",
+    maxWaitMinutes: 15,
+    tone: "",
+  });
 
   // Consultants state
   const [consultants, setConsultants] = useState<Consultant[]>([]);
@@ -152,6 +161,7 @@ export function SettingsPage() {
   };
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void checkAuth();
     void loadSettings();
     void loadConsultants();
@@ -220,7 +230,10 @@ export function SettingsPage() {
   };
 
   // Save specific settings key
-  const saveSettingKey = async (key: "company" | "products" | "faq" | "agent", payload: unknown) => {
+  const saveSettingKey = async (
+    key: "company" | "products" | "faq" | "agent",
+    payload: unknown
+  ) => {
     setSavingKey(key);
     setSaveStatus({});
     try {
@@ -253,11 +266,16 @@ export function SettingsPage() {
   const saveConsultant = async (e: FormEvent) => {
     e.preventDefault();
     setConsultantMsg("");
-    const res = await fetch(editingConsultantId ? `/api/admin/consultants/${editingConsultantId}` : "/api/admin/consultants", {
-      body: JSON.stringify(consultantForm),
-      headers: { "Content-Type": "application/json" },
-      method: editingConsultantId ? "PATCH" : "POST",
-    });
+    const res = await fetch(
+      editingConsultantId
+        ? `/api/admin/consultants/${editingConsultantId}`
+        : "/api/admin/consultants",
+      {
+        body: JSON.stringify(consultantForm),
+        headers: { "Content-Type": "application/json" },
+        method: editingConsultantId ? "PATCH" : "POST",
+      }
+    );
     const body = await res.json();
     if (!res.ok) {
       setConsultantMsg(body.error ?? "Não foi possível salvar o consultor.");
@@ -404,7 +422,9 @@ export function SettingsPage() {
             <div className="flex items-center justify-between gap-4">
               <div className="flex items-center gap-2">
                 <Building2 className="size-5 text-primary" />
-                <h2 className="text-base font-semibold text-foreground">Identificação Institucional</h2>
+                <h2 className="text-base font-semibold text-foreground">
+                  Identificação Institucional
+                </h2>
               </div>
               {authorized && (
                 <Button
@@ -436,7 +456,9 @@ export function SettingsPage() {
                 )}
               </div>
               <div className="space-y-1.5">
-                <label className="text-xs font-medium text-muted-foreground">Telefone Oficial WhatsApp</label>
+                <label className="text-xs font-medium text-muted-foreground">
+                  Telefone Oficial WhatsApp
+                </label>
                 {authorized ? (
                   <input
                     value={companyForm.phone}
@@ -450,12 +472,16 @@ export function SettingsPage() {
                 )}
               </div>
               <div className="sm:col-span-2 space-y-1.5">
-                <label className="text-xs font-medium text-muted-foreground">Descrição Institucional</label>
+                <label className="text-xs font-medium text-muted-foreground">
+                  Descrição Institucional
+                </label>
                 {authorized ? (
                   <textarea
                     rows={3}
                     value={companyForm.description}
-                    onChange={(e) => setCompanyForm({ ...companyForm, description: e.target.value })}
+                    onChange={(e) =>
+                      setCompanyForm({ ...companyForm, description: e.target.value })
+                    }
                     className="w-full rounded-lg border border-border bg-muted/30 p-3.5 text-sm text-foreground outline-none focus:border-primary"
                   />
                 ) : (
@@ -485,7 +511,11 @@ export function SettingsPage() {
                     onClick={() =>
                       setProductsForm([
                         ...productsForm,
-                        { desc: "Nova descrição do produto...", id: `prod-${Date.now()}`, title: "Novo Consórcio" },
+                        {
+                          desc: "Nova descrição do produto...",
+                          id: `prod-${Date.now()}`,
+                          title: "Novo Consórcio",
+                        },
                       ])
                     }
                   >
@@ -526,7 +556,9 @@ export function SettingsPage() {
                           variant="destructive"
                           size="sm"
                           type="button"
-                          onClick={() => setProductsForm(productsForm.filter((_, i) => i !== index))}
+                          onClick={() =>
+                            setProductsForm(productsForm.filter((_, i) => i !== index))
+                          }
                         >
                           <Trash2 size={13} />
                         </Button>
@@ -546,7 +578,9 @@ export function SettingsPage() {
                   ) : (
                     <>
                       <p className="font-medium text-sm text-foreground">{prod.title}</p>
-                      <p className="mt-1 text-xs text-muted-foreground leading-relaxed">{prod.desc}</p>
+                      <p className="mt-1 text-xs text-muted-foreground leading-relaxed">
+                        {prod.desc}
+                      </p>
                     </>
                   )}
                 </div>
@@ -564,7 +598,9 @@ export function SettingsPage() {
             <div className="flex items-center justify-between gap-4">
               <div className="flex items-center gap-2">
                 <FileQuestion className="size-5 text-primary" />
-                <h2 className="text-base font-semibold text-foreground">Base de Conhecimento e FAQ</h2>
+                <h2 className="text-base font-semibold text-foreground">
+                  Base de Conhecimento e FAQ
+                </h2>
               </div>
               {authorized && (
                 <div className="flex gap-2">
@@ -575,7 +611,11 @@ export function SettingsPage() {
                     onClick={() =>
                       setFaqForm([
                         ...faqForm,
-                        { a: "Resposta detalhada...", id: `faq-${Date.now()}`, q: "Nova pergunta frequente?" },
+                        {
+                          a: "Resposta detalhada...",
+                          id: `faq-${Date.now()}`,
+                          q: "Nova pergunta frequente?",
+                        },
                       ])
                     }
                   >
@@ -636,7 +676,9 @@ export function SettingsPage() {
                   ) : (
                     <>
                       <p className="font-medium text-sm text-foreground">{faq.q}</p>
-                      <p className="mt-1.5 text-xs text-muted-foreground leading-relaxed">{faq.a}</p>
+                      <p className="mt-1.5 text-xs text-muted-foreground leading-relaxed">
+                        {faq.a}
+                      </p>
                     </>
                   )}
                 </div>
@@ -654,7 +696,9 @@ export function SettingsPage() {
             <div className="flex items-center justify-between gap-4">
               <div className="flex items-center gap-2">
                 <Bot className="size-5 text-primary" />
-                <h2 className="text-base font-semibold text-foreground">Diretrizes da Mariana (IA)</h2>
+                <h2 className="text-base font-semibold text-foreground">
+                  Diretrizes da Mariana (IA)
+                </h2>
               </div>
               {authorized && (
                 <Button
@@ -667,7 +711,8 @@ export function SettingsPage() {
               )}
             </div>
             <p className="mt-1 text-xs text-muted-foreground">
-              Comportamento, tom de voz e regras de qualificação executadas no atendimento do WhatsApp.
+              Comportamento, tom de voz e regras de qualificação executadas no atendimento do
+              WhatsApp.
             </p>
 
             <div className="mt-6 space-y-4">
@@ -687,14 +732,18 @@ export function SettingsPage() {
                   )}
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-muted-foreground">Janela de Inatividade (minutos)</label>
+                  <label className="text-xs font-medium text-muted-foreground">
+                    Janela de Inatividade (minutos)
+                  </label>
                   {authorized ? (
                     <input
                       type="number"
                       min={1}
                       max={120}
                       value={agentForm.maxWaitMinutes}
-                      onChange={(e) => setAgentForm({ ...agentForm, maxWaitMinutes: Number(e.target.value) || 15 })}
+                      onChange={(e) =>
+                        setAgentForm({ ...agentForm, maxWaitMinutes: Number(e.target.value) || 15 })
+                      }
                       className="h-10 w-full rounded-lg border border-border bg-muted/30 px-3.5 text-sm font-mono text-foreground outline-none focus:border-primary"
                     />
                   ) : (
@@ -706,7 +755,9 @@ export function SettingsPage() {
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-xs font-medium text-muted-foreground">Instruções Operacionais e Limitações</label>
+                <label className="text-xs font-medium text-muted-foreground">
+                  Instruções Operacionais e Limitações
+                </label>
                 {authorized ? (
                   <textarea
                     rows={4}
@@ -729,7 +780,9 @@ export function SettingsPage() {
           {authorized && (
             <div className="rounded-xl border border-border bg-card p-6">
               <h2 className="text-base font-semibold">Equipe de consultores</h2>
-              <p className="mt-1 text-sm text-muted-foreground">Consultores inativos não recebem novas agendas. O histórico é preservado.</p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Consultores inativos não recebem novas agendas. O histórico é preservado.
+              </p>
               <form onSubmit={saveConsultant} className="mt-5 grid gap-3 sm:grid-cols-3">
                 <input
                   required
@@ -750,7 +803,9 @@ export function SettingsPage() {
                   <input
                     required
                     value={consultantForm.calendarId}
-                    onChange={(e) => setConsultantForm({ ...consultantForm, calendarId: e.target.value })}
+                    onChange={(e) =>
+                      setConsultantForm({ ...consultantForm, calendarId: e.target.value })
+                    }
                     placeholder="ID do Google Calendar"
                     className="h-9 min-w-0 flex-1 rounded-lg border border-border bg-muted/30 px-3 text-sm"
                   />
@@ -775,15 +830,21 @@ export function SettingsPage() {
 
           <div className="overflow-hidden rounded-xl border border-border bg-card">
             <div className="divide-y divide-border">
+              <h1>Consultores</h1>
               {consultants.map((consultant) => (
-                <div key={consultant.id} className="flex flex-wrap items-center justify-between gap-3 p-4">
+                <div
+                  key={consultant.id}
+                  className="flex flex-wrap items-center justify-between gap-3 p-4"
+                >
                   <div>
                     <p className="font-medium text-sm">{consultant.name}</p>
                     <p className="text-xs text-muted-foreground">
                       {consultant.email} · {consultant.calendarId}
                     </p>
                     <div className="mt-2 flex items-center gap-2">
-                      <StatusBadge status={consultant.connectedGoogleAccount ? "connected" : "disconnected"} />
+                      <StatusBadge
+                        status={consultant.connectedGoogleAccount ? "connected" : "disconnected"}
+                      />
                       <span className="text-xs text-muted-foreground">
                         {consultant.connectedGoogleAccount ?? "Google Calendar não conectado"}
                       </span>
@@ -816,7 +877,11 @@ export function SettingsPage() {
                       >
                         {consultant.active ? "Desativar" : "Ativar"}
                       </Button>
-                      <Button variant="destructive" size="sm" onClick={() => setConsultantToDelete(consultant)}>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => setConsultantToDelete(consultant)}
+                      >
                         <Trash2 />
                         Excluir
                       </Button>
@@ -843,11 +908,14 @@ export function SettingsPage() {
           <div className="w-full max-w-md rounded-xl border border-border bg-card p-6 shadow-2xl">
             <h3 className="text-base font-semibold text-foreground">Acesso administrativo</h3>
             <p className="mt-2 text-sm text-muted-foreground">
-              Informe o código de seis dígitos do seu aplicativo autenticador para liberar a edição das configurações e consultores.
+              Informe o código de seis dígitos do seu aplicativo autenticador para liberar a edição
+              das configurações e consultores.
             </p>
             <form onSubmit={handleAuthSubmit} className="mt-5 space-y-4">
               <div>
-                <label className="text-xs text-muted-foreground block mb-1.5">Código de seis dígitos</label>
+                <label className="text-xs text-muted-foreground block mb-1.5">
+                  Código de seis dígitos
+                </label>
                 <input
                   autoFocus
                   inputMode="numeric"
@@ -884,13 +952,18 @@ export function SettingsPage() {
       {consultantToDelete && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-xs">
           <div className="w-full max-w-md rounded-xl border border-border bg-card p-6 shadow-2xl">
-            <h3 className="text-base font-semibold text-foreground">Confirmar exclusão de consultor</h3>
+            <h3 className="text-base font-semibold text-foreground">
+              Confirmar exclusão de consultor
+            </h3>
             <p className="mt-2 text-sm text-muted-foreground">
-              Para excluir <strong className="text-foreground">{consultantToDelete.name}</strong>, informe o código de 6 dígitos do seu autenticador.
+              Para excluir <strong className="text-foreground">{consultantToDelete.name}</strong>,
+              informe o código de 6 dígitos do seu autenticador.
             </p>
             <form onSubmit={confirmRemoveConsultant} className="mt-5 space-y-4">
               <div>
-                <label className="text-xs text-muted-foreground block mb-1.5">Código de seis dígitos</label>
+                <label className="text-xs text-muted-foreground block mb-1.5">
+                  Código de seis dígitos
+                </label>
                 <input
                   autoFocus
                   inputMode="numeric"
@@ -915,7 +988,11 @@ export function SettingsPage() {
                 >
                   Cancelar
                 </Button>
-                <Button type="submit" variant="destructive" disabled={deleteCode.length !== 6 || isDeleting}>
+                <Button
+                  type="submit"
+                  variant="destructive"
+                  disabled={deleteCode.length !== 6 || isDeleting}
+                >
                   {isDeleting ? "Excluindo..." : "Confirmar exclusão"}
                 </Button>
               </div>

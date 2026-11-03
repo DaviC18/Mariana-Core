@@ -125,8 +125,15 @@ test("allowed facts pass: 18 anos, 30 minutos, Google Meet, 35 anos", () => {
 	passes("A idade mínima é 18 anos.");
 	passes("A reunião dura 30 minutos e é online pelo Google Meet.");
 	passes("A Ademicon atua há 35 anos no mercado.");
+	passes("O consórcio atende veículos novos 0km e seminovos.");
+	passes("Você pode escolher um carro 0 km ou seminovo.");
 	passes("O lance depende das regras do grupo e não garante contemplação.");
 	passes("Não é possível prever quando a contemplação acontece.");
+});
+
+test("courtesy greeting with question mark does not trip question limit", () => {
+	passes("Olá, Davi! Tudo bem? Como posso ajudar você hoje?");
+	passes("Oi! Tudo bom? Você procura um carro ou um imóvel?");
 });
 
 test("every clientAllowed knowledge sentence passes", () => {

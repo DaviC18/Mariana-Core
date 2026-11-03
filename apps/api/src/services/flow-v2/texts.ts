@@ -20,6 +20,10 @@ export const T_UNDER_18 =
 	"Para conversar com um consultor é preciso ter 18 anos ou mais. Mas posso continuar tirando suas dúvidas por aqui!";
 export const T_AI_FALLBACK =
 	"Boa pergunta! Esse ponto o consultor explica melhor na reunião. Quer que eu veja os horários?";
+export const T_ASK_DATE =
+	"Qual dia você prefere? Posso procurar hoje, amanhã ou na próxima segunda-feira.";
+export const T_NO_SLOTS_ON_REQUESTED_DATE =
+	"Não encontrei horários disponíveis para a data que você pediu. Se quiser, me diga outro dia.";
 export const T_STATUS_SLOT = "Falta escolher um dos horários abaixo.";
 export const T_STATUS_CONFIRM = "Falta confirmar o horário abaixo.";
 /** T-RESCHEDULE (aprovado por Davi em 2026-10-28, opção A; serve para remarcar e cancelar). */

@@ -7,7 +7,7 @@
  * `TurnSupersededError`), linha da assistente, oferta, outbox (chave
  * `runKey`) e mensagens do lote processadas → um `mariana_turn`.
  */
-import { eq, inArray } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { resolveModelName } from "../../ai/model-config";
 import { ModelUnavailableError } from "../../ai/model-errors";
 import { db } from "../../db/connections";
@@ -16,6 +16,7 @@ import {
 	leads,
 	messages,
 	outboundMessages,
+	schedulingSessions,
 } from "../../db/schema";
 import { env } from "../../env";
 import {
@@ -41,6 +42,7 @@ import {
 	enqueueOutboundMessage,
 	type OutboundMessagePayload,
 } from "../messaging/outbound-messages";
+import { parseDatePreference } from "./date-preference";
 import { mergeLeadFields, statesMinor } from "./lead-fields";
 import { checkReply } from "./reply-guard";
 import { routeStartScheduling, routeTurn, routeUnderstood } from "./router";
@@ -60,8 +62,10 @@ import {
 	CONSULTANT_BUTTON,
 	firstNameForGreeting,
 	T_AI_FALLBACK,
+	T_ASK_DATE,
 	T_ASK_OBJECTIVE,
 	T_GREETING_AGAIN,
+	T_NO_SLOTS_ON_REQUESTED_DATE,
 	T_RESCHEDULE,
 	T_SENSITIVE,
 	T_STATUS_CONFIRM,
@@ -162,7 +166,12 @@ type Plan =
 			responder: TurnResponder;
 			route: TurnRoute;
 	  }
-	| { kind: "offer"; offer: SchedulingOfferPreparation };
+	| {
+			/** Dia pedido sem vaga: fecha a sessão em vez de deixá-la órfã. */
+			closeActiveSessionOnEmpty?: boolean;
+			kind: "offer";
+			offer: SchedulingOfferPreparation;
+	  };
 
 interface TraceContext {
 	conversationId: string;
@@ -361,6 +370,61 @@ async function planStartScheduling({
 	return { kind: "offer", offer };
 }
 
+/**
+ * R7 antes da IA: durante uma oferta ativa o lead pediu um dia ("quarta-feira")
+ * ou pediu outros dias. Sem isto o turno cai na IA e a oferta volta com a
+ * janela padrão de 5 dias, ignorando o dia pedido.
+ */
+async function planDatePreference({
+	conversationId,
+	currentMessages,
+	deps,
+	leadId,
+	now,
+	state,
+}: {
+	conversationId: string;
+	currentMessages: readonly string[];
+	deps: FlowV2Deps;
+	leadId: string;
+	now: Date;
+	state: TurnState;
+}): Promise<Plan | null> {
+	if (!state.activeSession) {
+		return null;
+	}
+	const preference = parseDatePreference(currentMessages, now);
+	if (preference?.kind === "ambiguous") {
+		return await withStageOrConsultant({
+			body: T_ASK_DATE,
+			buttonRoute: "R7c",
+			conversationId,
+			responder: "automation",
+			stageRoute: "R7e",
+			state,
+		});
+	}
+	if (preference?.kind !== "date") {
+		return null;
+	}
+	const offer = await prepareSchedulingOffer({
+		availability: deps.availability ?? defaultAvailability,
+		conversationId,
+		leadId,
+		now,
+		random: deps.random ?? Math.random,
+		timeRange: preference,
+	});
+	return {
+		closeActiveSessionOnEmpty: offer.kind === "none",
+		kind: "offer",
+		offer:
+			offer.kind === "none"
+				? { ...offer, noSlotsText: T_NO_SLOTS_ON_REQUESTED_DATE }
+				: offer,
+	};
+}
+
 async function lockLeadAndCheckActive(
 	tx: FlowV2Tx,
 	leadId: string,
@@ -436,6 +500,24 @@ async function writePlan({
 		// B3: campos do `understand`, validados pelo backend, sob o lock do lead.
 		if (fields) {
 			await mergeLeadFields(tx, { fields, leadId, now });
+		}
+
+		// Dia pedido sem vaga: a sessão não pode seguir ativa com botões de
+		// horários que já não valem.
+		if (
+			plan.kind === "offer" &&
+			plan.closeActiveSessionOnEmpty &&
+			plan.offer.kind === "none"
+		) {
+			await tx
+				.update(schedulingSessions)
+				.set({ status: "closed", updatedAt: now })
+				.where(
+					and(
+						eq(schedulingSessions.conversationId, conversationId),
+						eq(schedulingSessions.status, "active")
+					)
+				);
 		}
 
 		const written =
@@ -964,6 +1046,18 @@ export async function runFlowV2Turn({
 		}
 		if (route !== "R7") {
 			return await planAutomationRoute(route, state, conversationId);
+		}
+
+		const datePlan = await planDatePreference({
+			conversationId,
+			currentMessages,
+			deps,
+			leadId,
+			now,
+			state,
+		});
+		if (datePlan) {
+			return datePlan;
 		}
 
 		// R7: uma chamada à IA, fora da transação.
